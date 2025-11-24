@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Email Webhook Test</title>
+</head>
+<body>
+  <h1>Send text to /email-webhook</h1>
+
+  <form id="emailForm">
+    <label for="text">Message text:</label><br />
+    <textarea id="text" rows="5" cols="60">
+What is Agent Development Kit from Google? What languages is the SDK available in?
+    </textarea><br /><br />
+    <button type="submit">Send</button>
+  </form>
+
+  <pre id="result"></pre>
+
+  <script>
+    const form = document.getElementById("emailForm");
+    const resultEl = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const text = document.getElementById("text").value;
+
+      try {
+        const res = await fetch("http://localhost:8080/email-webhook", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // include your token header if you enforce it
+            "X-Mailhook-Token": "supersecret"
+          },
+          body: JSON.stringify({ text: text })
+        });
+
+        const bodyText = await res.text();
+        resultEl.textContent =
+          "Status: " + res.status + "\n\nResponse body:\n" + bodyText;
+      } catch (err) {
+        resultEl.textContent = "Error: " + err;
+      }
+    });
+  </script>
+</body>
+</html>

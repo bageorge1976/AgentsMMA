@@ -6,10 +6,10 @@ import json
 import logging
 import asyncio
 from typing import Any, Dict, Union
-
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request, Header, Response
 import uvicorn
-
+from fastapi.responses import PlainTextResponse
 
 # Import ADK components (silently during module load)
 try:
@@ -52,6 +52,15 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(
 
 app = FastAPI(title="Webhook Receiver")
 
+# Allow your HTML server on 8001 to call this API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8002"],  # front-end origin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.post("/email-webhook")
 async def email_webhook(
     request: Request,
@@ -71,6 +80,35 @@ async def email_webhook(
         body = raw.decode("utf-8", "ignore")
     log.info("Text from Body: %s", body["text"])
 
+    contact_record ="""
+    Contact(first_name="Bogdan",
+        last_name="Georgescu",
+        hebrew_name= "בורגאן גאורגסקו",
+        birth_date=datetime(1976,1,16),
+        birth_date_day_h=14,
+        birth_date_month_h=2, 
+        birth_date_year_h=5776, 
+        phone_primary="14032829220",    
+        phone_secondary="15879669220",  
+        email="bageorge1976@gmail.com",
+        address="805 80 Point McKay CR NW",
+        city="Calgary",
+        province="Alberta",
+        country="Canada",
+        postal_code="T3B4W4",
+        notes="A sample contact")  
+    
+    """
+
+    prompt = f"""
+    Prepare a validation_record string for the following contact record. I want the breakdown of the logic or steps for this rather complex task.
+    In plain english explain your answer and give the rationale.
+    In the validation_record use a new line after each Rule."""
+
+    with open("rules.txt", "r", encoding="utf-8") as f:
+        rules = f.read()
+
+
     # Process the text with Google ADK agent
     try:
         # Get the runner (creates it only once)
@@ -79,6 +117,7 @@ async def email_webhook(
         # Use run_debug with the prompt
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
+            #events = await current_runner.run_debug(prompt + " " + contact_record +" "+ rules )
             events = await current_runner.run_debug(body["text"])
 
         # Take the last event and extract plain text from its parts
@@ -96,7 +135,7 @@ async def email_webhook(
         log.error("ADK processing error: %s", str(e))
 
     # Return 204 No Content like the original
-    return Response(status_code=204)
+    return PlainTextResponse(agent_text)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8080"))

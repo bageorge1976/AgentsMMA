@@ -68,8 +68,8 @@ else add "Rule 5: Failed; Hebrew birth date invalid." to the validation_record.
 Rule 6: The Hebrew birth date passed, made true, Rule 5 and it is empty
 and
 the Gregorian birth date passed, made true, Rule 4, and it is empty.
-If Rule 6 is true add "Rule 6: Failed; Both Hebrew date and Gregorian date are empty" to the validation_record
-else add "Rule 6: Passed; Either the Hebrew birth date or the Gregorian birth date contains valid non-empty data" to the validation_record.  
+If Rule 6 is true add "Rule 6: Failed; Both Hebrew date and Gregorian date are empty." to the validation_record
+else add "Rule 6: Passed; Either the Hebrew birth date or the Gregorian birth date contains valid non-empty data." to the validation_record.  
 
 
 Rule 7. If the 
@@ -84,14 +84,14 @@ else add "Rule 7: Failed; The Hebrew and Gregorian dates do not correspond." to 
 
 Rule 8. The contact field birth_date is valid and it is not empty and 
 the Hebrew birth date is empty (Example: one or more fields (birth_date_day_h, birth_date_month_h, birth_date_year_h) is equal to 0).
-If Rule 8 is true add: "Rule 8: Passed; Conversion needed from Gregorian to Hebrew" to validation_record
-else add "Rule 8: Failed; No conversion needed from Gregorian to Hebrew" to validation_record.
+If Rule 8 is not true add: "Rule 8: Passed; No conversion needed from Gregorian to Hebrew." to validation_record
+else add "Rule 8: Failed; Conversion needed from Gregorian to Hebrew." to validation_record.
 
 
 Rule 9. The Hebrew date is valid and it is not empty (Example: none of the fields (birth_date_day_h, birth_date_month_h, birth_date_year_h) is equal to 0) 
 and contact field birth_date is empty.
-If Rule 9 is true is true add: "Rule 9: Passed; Conversion needed from Hebrew to Gregorian" to validation_record
-else add "Rule 9: Failed; No conversion needed from Hebrew to Gregorian" to validation_record. 
+If Rule 9 is not true add: "Rule 9: Passed; No conversion needed from Hebrew to Gregorian." to validation_record
+else add "Rule 9: Failed; Conversion needed from Hebrew to Gregorian." to validation_record. 
 
 
 Rule 10. Contact field phone_primary is a valid Canada phone number.

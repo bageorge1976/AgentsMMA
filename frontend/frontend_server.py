@@ -10,5 +10,5 @@ class MyHandler(SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     httpd = HTTPServer(("0.0.0.0", PORT), MyHandler)
-    print(f"Serving index.html at http://localhost:{PORT}/")
+    print(f"Serving index.html (user interface) at http://localhost:{PORT}/")
     httpd.serve_forever()

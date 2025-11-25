@@ -2,46 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Email Webhook Test</title>
+  <title>Two FastAPI Servers Demo</title>
 </head>
 <body>
-  <h1>Send text to /email-webhook</h1>
+  <h1>Frontend → Server A (8090) → Server B (8080) → Frontend</h1>
 
-  <form id="emailForm">
-    <label for="text">Message text:</label><br />
-    <textarea id="text" rows="5" cols="60">
-What is Agent Development Kit from Google? What languages is the SDK available in?
-    </textarea><br /><br />
+  <form id="textForm">
+    <label for="text">Enter some text:</label><br />
+    <textarea id="text" rows="4" cols="60">hello from frontend</textarea><br /><br />
     <button type="submit">Send</button>
   </form>
 
+  <h2>Result</h2>
   <pre id="result"></pre>
 
   <script>
-    const form = document.getElementById("emailForm");
+    const form = document.getElementById("textForm");
     const resultEl = document.getElementById("result");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const text = document.getElementById("text").value;
+      const prompt = document.getElementById("text").value;
 
       try {
-        const res = await fetch("http://localhost:8080/email-webhook", {
+        const res = await fetch("http://localhost:8090/generate_test", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // include your token header if you enforce it
-            "X-Mailhook-Token": "supersecret"
           },
-          body: JSON.stringify({ text: text })
+          body: JSON.stringify({ test_prompt:prompt }) // string payload
         });
 
-        const bodyText = await res.text();
+        if (!res.ok) {
+          const errBody = await res.text();
+          resultEl.textContent =
+            "Error " + res.status + ":\n" + errBody;
+          return;
+        }
+
+        const data = await res.json();
+        // data = { original: "...", from_server_b: "..." }
+
         resultEl.textContent =
-          "Status: " + res.status + "\n\nResponse body:\n" + bodyText;
+          "Generated Test Data:\n" + data.agent_generated_test_data + "\n\n" +
+          "Results From The API Tested:\n" + data.test_results_from_API;
       } catch (err) {
-        resultEl.textContent = "Error: " + err;
+        resultEl.textContent = "Request error: " + err;
       }
     });
   </script>

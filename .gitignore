@@ -9,6 +9,10 @@ __pycache__/
 env/
 venv/
 
+# Environment variables files
+.env/
+.env
+
 # OS-specific files
 .DS_Store
 Thumbs.db

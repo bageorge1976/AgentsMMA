@@ -1,0 +1,218 @@
+Yep, this is a nice little “backend chain” pattern. Let’s wire it exactly as you asked:
+
+Server B (FastAPI) on port 8080
+
+Server A (FastAPI) on port 8090
+
+Frontend (static HTML) on port 8002
+
+Flow: Frontend → A → B → A → Frontend, all using string data
+
+1️⃣ Server B (port 8080) – “worker” service
+
+server_b.py
+
+# server_b.py
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class BRequest(BaseModel):
+    text: str  # string in, string out
+
+class BResponse(BaseModel):
+    result: str
+
+@app.post("/process", response_model=BResponse)
+async def process(payload: BRequest):
+    # Do something with the string (for demo: uppercase it)
+    processed = payload.text.upper()
+    return BResponse(result=processed)
+
+
+Run it:
+
+uvicorn server_b:app --port 8080 --reload
+
+2️⃣ Server A (port 8090) – API the frontend talks to
+
+Receives a POST from the frontend with a string
+
+Forwards that string to Server B
+
+Waits for B’s response
+
+Returns combined data to the frontend
+
+server_a.py
+
+# server_a.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import httpx  # pip install httpx
+
+app = FastAPI()
+
+# Frontend runs on http://localhost:8002
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8002"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class FrontendRequest(BaseModel):
+    text: str  # string from the browser
+
+class FrontendResponse(BaseModel):
+    original: str      # original text from frontend
+    from_server_b: str # processed text from server B
+
+SERVER_B_URL = "http://localhost:8080/process"
+
+@app.post("/to-b", response_model=FrontendResponse)
+async def to_b(payload: FrontendRequest):
+    # 1) Receive string from frontend
+    original_text = payload.text
+
+    # 2) Forward to Server B and wait for response
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(SERVER_B_URL, json={"text": original_text})
+        resp.raise_for_status()
+        data_from_b = resp.json()  # e.g. {"result": "HELLO WORLD"}
+
+    # 3) Build response for frontend (only after B replied)
+    return FrontendResponse(
+        original=original_text,
+        from_server_b=data_from_b["result"],
+    )
+
+
+Run it:
+
+uvicorn server_a:app --port 8090 --reload
+
+3️⃣ Frontend (port 8002) – posts to Server A, gets B’s result
+index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Two FastAPI Servers Demo</title>
+</head>
+<body>
+  <h1>Frontend → Server A (8090) → Server B (8080) → Frontend</h1>
+
+  <form id="textForm">
+    <label for="text">Enter some text:</label><br />
+    <textarea id="text" rows="4" cols="60">hello from frontend</textarea><br /><br />
+    <button type="submit">Send</button>
+  </form>
+
+  <h2>Result</h2>
+  <pre id="result"></pre>
+
+  <script>
+    const form = document.getElementById("textForm");
+    const resultEl = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const text = document.getElementById("text").value;
+
+      try {
+        const res = await fetch("http://localhost:8090/to-b", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text }) // string payload
+        });
+
+        if (!res.ok) {
+          const errBody = await res.text();
+          resultEl.textContent =
+            "Error " + res.status + ":\n" + errBody;
+          return;
+        }
+
+        const data = await res.json();
+        // data = { original: "...", from_server_b: "..." }
+
+        resultEl.textContent =
+          "Original from frontend:\n" + data.original + "\n\n" +
+          "Processed by Server B:\n" + data.from_server_b;
+      } catch (err) {
+        resultEl.textContent = "Request error: " + err;
+      }
+    });
+  </script>
+</body>
+</html>
+
+Tiny static server on port 8002
+
+frontend_server.py (in the same folder as index.html)
+
+# frontend_server.py
+from http.server import SimpleHTTPRequestHandler, HTTPServer
+
+PORT = 8002
+DIRECTORY = "."  # serve files from current directory
+
+class MyHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=DIRECTORY, **kwargs)
+
+if __name__ == "__main__":
+    httpd = HTTPServer(("0.0.0.0", PORT), MyHandler)
+    print(f"Serving index.html at http://localhost:{PORT}/")
+    httpd.serve_forever()
+
+
+Run it:
+
+cd EmailAgent/frontend   # wherever index.html and frontend_server.py live
+python frontend_server.py
+
+
+Then open http://localhost:8002/
+ in your browser.
+
+4️⃣ Flow summary (all strings)
+
+Frontend sends:
+
+{ "text": "hello from frontend" }
+
+
+to POST http://localhost:8090/to-b (Server A).
+
+Server A receives that string, then internally does:
+
+POST http://localhost:8080/process
+Content-Type: application/json
+
+{ "text": "hello from frontend" }
+
+
+Server B processes the string (e.g. uppercase) and returns:
+
+{ "result": "HELLO FROM FRONTEND" }
+
+
+Server A waits for that, then sends back to the frontend:
+
+{
+  "original": "hello from frontend",
+  "from_server_b": "HELLO FROM FRONTEND"
+}
+
+
+The frontend JS shows both in the <pre> box.
+
+That’s exactly Pattern 1 with your port layout and “frontend → A → B → A → frontend” behavior, with everything handled as strings end-to-end.

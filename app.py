@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 import schemas
-from database import (
+from database_local import (
     create_all_tables,
     get_async_session,
 )

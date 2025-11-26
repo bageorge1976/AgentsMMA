@@ -11,17 +11,121 @@ from fastapi import FastAPI, Request, Header, Response
 import uvicorn
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
+from datetime import datetime
+
 
 
 # Import ADK components (silently during module load)
 try:
     from google.adk.agents import Agent
     from google.adk.runners import InMemoryRunner
-    from google.adk.tools import google_search
+    from google.adk.tools import AgentTool, google_search
     from google.genai import types
 except ImportError as e:
     print(f"❌ ADK Import Error: {e}")
     raise
+
+# --- NEW IMPORTS for Database Tool ---
+from database_remote import save_contact_to_db, create_all_tables # Import db functions
+
+# --- NEW Pydantic Model for Tool Input (based on schemas.py/ContactBase) ---
+class ContactRecordInput(BaseModel):
+    """Schema for a full contact record passed to the database tool."""
+    first_name: str
+    last_name: str
+    hebrew_name: str 
+
+    birth_date: datetime
+    birth_date_day_h:int 
+    birth_date_month_h:int
+    birth_date_year_h:int
+    
+    phone_primary: str    
+    phone_secondary: str   
+    email: str
+    address: str
+    city: str
+    country: str
+    province: str    
+    notes: str
+
+# --- NEW ADK Tool Function ---
+async def write_contact_to_database(
+    first_name: str,
+    last_name: str,
+    hebrew_name: str,
+    birth_date: str,          # ISO string, e.g. "1976-01-16"
+    birth_date_day_h: int,
+    birth_date_month_h: int,
+    birth_date_year_h: int,
+    phone_primary: str,
+    phone_secondary: str,
+    email: str,
+    address: str,
+    city: str,
+    province: str,
+    country: str,
+    notes: str,
+) -> str:
+    """
+    Writes a structured contact record into the database.
+
+    ADK will call this tool with simple JSON fields.
+    `birth_date` should be an ISO date string, e.g. "1976-01-16".
+    """
+    try:
+        # Parse birth_date string into datetime
+        try:
+            birth_dt = datetime.fromisoformat(birth_date)
+        except ValueError:
+            # Fallback if the model gives something slightly off
+            return f"Failed to parse birth_date '{birth_date}' as ISO date."
+
+        contact_data = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "hebrew_name": hebrew_name,
+            "birth_date": birth_dt,
+            "birth_date_day_h": birth_date_day_h,
+            "birth_date_month_h": birth_date_month_h,
+            "birth_date_year_h": birth_date_year_h,
+            "phone_primary": phone_primary,
+            "phone_secondary": phone_secondary,
+            "email": email,
+            "address": address,
+            "city": city,
+            "province": province,
+            "country": country,
+            "notes": notes,
+            # created_at / updated_at are filled by SQLAlchemy defaults
+        }
+
+        msg, new_id = await save_contact_to_db(contact_data)  # returns (msg, id) :contentReference[oaicite:1]{index=1}
+        return f"{msg} New contact id={new_id}."
+
+    except Exception as e:
+        return f"Failed to save contact record to database: {e}"
+# --- END NEW ADK Tool Function ---
+
+# --- Child Agent Definition ---
+validation_narrator_agent = None
+
+def get_validation_narrator_agent():
+    """Defines and returns the specialized agent for generating verbose validation stories."""
+    global validation_narrator_agent
+    if validation_narrator_agent is None:
+        validation_narrator_agent = Agent(
+            # THIS NAME IS USED BY THE ROOT AGENT TO CALL THE TOOL
+            name="ValidationNarratorAgent", 
+            model="gemini-2.5-flash",
+            description="A dedicated agent for generating verbose, structured narratives based on validation data. This agent's input is the full contact record.",
+            instruction="""Your only job is to generate a detailed, verbose, and structured story based on the validation_record field of the input. 
+            Do NOT attempt to write a contact record, call other tools, or perform calculations. 
+            Analyze the validation_record (which is a semicolon-separated list of rules) and write a human-readable summary of every rule checked, clearly marking each one as '✅ Passed' or '❌ Failed'. 
+            Always provide a final, prominent summary sentence about the overall record quality.""",
+            tools=[], 
+        )
+    return validation_narrator_agent
 
 # Initialize runner only once
 runner = None
@@ -35,12 +139,27 @@ def get_runner():
         print("✅ Google GenAI configuration set.")
         print("✅ ADK components imported successfully.")
         
+        # ✅ Make sure the child agent is created
+        child = get_validation_narrator_agent()
+
         root_agent = Agent(
-            name="helpful_assistant",
-            model="gemini-2.5-flash-lite",
-            description="A simple agent that can answer general questions.",
-            instruction="You are a helpful assistant. Use Google Search for current info or if unsure.",
-            tools=[google_search],
+            name="Validation_Agent",
+            model="gemini-2.5-flash",
+            description="A simple agent that can validate contact records.",
+            instruction=(
+                "You are an Intelligent Validation Agent. "
+                "1. Your first task is always to validate the contact record according to the rules provided step by step, providing the rationale."
+                "2. Next, you MUST call the 'ValidationNarratorAgent' tool, passing the contact record, the validation_record and the rules to retrieve the detailed, verbose validation narrative from the sub-agent."
+                "3. Then, you MUST call the 'write_contact_to_database' tool to persist the record."
+                "4. Your final, complete response MUST be a combination of the verbose validation story (Step 2 result) and the database success message (Step 3 result). Be clear and verbose in your final summary."
+                # "First validate the contact record according to the rules provided step by step and providing the rationale. "
+                #"When you have a complete contact record (with names, dates, phones, address, etc.), "
+                #"call the `write_contact_to_database` tool with all the appropriate fields. "
+                #"After successfully calling the 'write_contact_to_database' tool, your final answer MUST explicitly begin with the exact, full success message returned by the tool. Do not shorten, summarize, or modify the tool's output message. Your response must be clear and verbose."
+                #"Use ISO format for birth_date (YYYY-MM-DD). "
+                #"Use Google Search for current info or if unsure."
+            ),
+            tools=[write_contact_to_database,AgentTool(agent=child)], #removed google_search
         )
         print("✅ Root Agent defined.")
         
@@ -52,7 +171,12 @@ def get_runner():
 log = logging.getLogger("api_under_test")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 
-app = FastAPI(title="API Under Test")
+@contextlib.asynccontextmanager
+async def lifespan(app: FastAPI):
+    await create_all_tables()
+    yield
+
+app = FastAPI(title="API Under Test", lifespan=lifespan)
 
 # Allow your HTML server on 8001 to call this API
 app.add_middleware(
@@ -75,52 +199,20 @@ async def test_data(
     #x_mailhook_token: Union[str, None] = Header(default=None)  # optional: read shared secret header
 ) -> Response:
     # Read raw body bytes
-
-
-    contact_record ="""
-    Contact(first_name="Bogdan",
-        last_name="Georgescu",
-        hebrew_name= "בורגאן גאורגסקו",
-        birth_date=datetime(1976,1,16),
-        birth_date_day_h=14,
-        birth_date_month_h=2, 
-        birth_date_year_h=5776, 
-        phone_primary="14032829220",    
-        phone_secondary="15879669220",  
-        email="bageorge1976@gmail.com",
-        address="805 80 Point McKay CR NW",
-        city="Calgary",
-        province="Alberta",
-        country="Canada",
-        postal_code="T3B4W4",
-        notes="A sample contact")  
-    
-    """
-
-    prompt = f"""
-    Prepare a validation_record string for the following contact record. I want the breakdown of the logic or steps for this rather complex task.
-    In plain english explain your answer and give the rationale.
-    In the validation_record use a new line after each Rule."""
-
     
 
-    with open("rules.txt", "r", encoding="utf-8") as f:
-        rules = f.read()
+    with open("under_test_cmd.txt", "r", encoding="utf-8") as f:
+        cmd_prompt = f.read()
 
+    agent_text = ""  # ✅ initialize so it's always defined
 
     # Process the text with Google ADK agent
     try:
-        # Get the runner (creates it only once)
         current_runner = get_runner()
-        
-        # Use run_debug with the prompt
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            #events = await current_runner.run_debug(prompt + " " + payload.record + " " + rules )
-            #events = await current_runner.run_debug(body["text"])
-            events = await current_runner.run_debug(payload.record)
+            events = await current_runner.run_debug(payload.record + " " + cmd_prompt)
 
-        # Take the last event and extract plain text from its parts
         if events:
             last_event = events[-1]
             agent_text = "".join(
@@ -130,13 +222,13 @@ async def test_data(
             log.info("Agent response: %s", agent_text)
         else:
             log.warning("No events received from ADK runner")
-            
+            agent_text = "No events received from ADK runner."
+
     except Exception as e:
         log.error("ADK processing error: %s", str(e))
         if not agent_text:
             agent_text = f"Error generating response: {e}"
 
-    # Return 204 No Content like the original
     return ResponseToTestGeneratorAPI(result=agent_text)
 
 if __name__ == "__main__":

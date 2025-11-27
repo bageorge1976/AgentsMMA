@@ -5,7 +5,8 @@
   <title>Two FastAPI Servers Demo</title>
 </head>
 <body>
-  <h1>Frontend → Server A (8090) → Server B (8080) → Frontend</h1>
+  <h2>Membership Monitoring Application: Test Generation and Test Validation</h2>  
+  <h3>This Frontend (8002) →  Test Generation API (8090) → Test Validation API (8080) → Test Generation API (8090) → This Frontend (8002)</h3>
 
   <form id="textForm">
     <label for="text">Enter some text:</label><br />
@@ -13,12 +14,35 @@
     <button type="submit">Send</button>
   </form>
 
-  <h2>Result</h2>
-  <pre id="result"></pre>
+  <h2>Response from the APIs:</h2>
+  <h3>Response from Test Generation API:</h3>
+  <pre id="resultTestGeneration"></pre>
+  <h3>Response from Test Validation API:</h3>
+  <pre id="resultTestValidation"></pre>
+
+    <!-- NEW: DB dump section -->
+  <div class="result-block">
+    <div class="result-title">Test Generation Database dump</div>
+    <button id="TGloadDumpBtn">Load Test Generation DB dump</button>
+    <pre id="TGdbDump">(not loaded yet)</pre>
+  </div>
+
+  <div class="result-block">
+    <div class="result-title">Test Validation Database dump</div>
+    <button id="TVloadDumpBtn">Load Test Validation DB dump</button>
+    <pre id="TVdbDump">(not loaded yet)</pre>
+  </div>
+
+    <div class="result-block">
+    <div class="result-title">States Database dump</div>
+    <button id="TSloadDumpBtn">Load States DB dump</button>
+    <pre id="TSdbDump">(not loaded yet)</pre>
+  </div>
 
   <script>
     const form = document.getElementById("textForm");
-    const resultEl = document.getElementById("result");
+    const resultTG = document.getElementById("resultTestGeneration");
+    const resultTV = document.getElementById("resultTestValidation");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -36,21 +60,93 @@
 
         if (!res.ok) {
           const errBody = await res.text();
-          resultEl.textContent =
+          resultTG.textContent =
             "Error " + res.status + ":\n" + errBody;
+          resultTV.textContent = "";
           return;
         }
 
         const data = await res.json();
         // data = { original: "...", from_server_b: "..." }
 
-        resultEl.textContent =
-          "Generated Test Data:\n" + data.agent_generated_test_data + "\n\n" +
-          "Results From The API Tested:\n" + data.test_results_from_API;
+        resultTG.textContent = data.agent_generated_test_data + "\n\n"
+        resultTV.textContent = data.test_results_from_API;
       } catch (err) {
-        resultEl.textContent = "Request error: " + err;
-      }
+        resultTG.textContent = "Request error: " + err;
+        resultTV.textContent = "";
+    }
     });
+
+    // NEW: DB dump loader
+  const TGdumpBtn = document.getElementById("TGloadDumpBtn");
+  const TGdbDumpEl = document.getElementById("TGdbDump");
+
+  TGdumpBtn.addEventListener("click", async () => {
+    TGdbDumpEl.textContent = "Loading database dump...";
+
+    try {
+      const res = await fetch("http://localhost:8090/TGdb-dump");
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        TGdbDumpEl.textContent =
+          "Error " + res.status + ":\n\n" + errBody;
+        return;
+      }
+
+      const TGdumpText = await res.text();
+      TGdbDumpEl.textContent = TGdumpText;
+    } catch (err) {
+      TGdbDumpEl.textContent = "Request error: " + err;
+    }
+  });
+
+    const TVdumpBtn = document.getElementById("TVloadDumpBtn");
+    const TVdbDumpEl = document.getElementById("TVdbDump");
+
+    TVdumpBtn.addEventListener("click", async () => {
+    TVdbDumpEl.textContent = "Loading database dump...";
+
+    try {
+      const res = await fetch("http://localhost:8090/TVdb-dump");
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        TVdbDumpEl.textContent =
+          "Error " + res.status + ":\n\n" + errBody;
+        return;
+      }
+
+      const TVdumpText = await res.text();
+      TVdbDumpEl.textContent = TVdumpText;
+    } catch (err) {
+      TVdbDumpEl.textContent = "Request error: " + err;
+    }
+  });
+
+    const TSdumpBtn = document.getElementById("TSloadDumpBtn");
+    const TSdbDumpEl = document.getElementById("TSdbDump");
+
+    TSdumpBtn.addEventListener("click", async () => {
+    TSdbDumpEl.textContent = "Loading database dump...";
+
+    try {
+      const res = await fetch("http://localhost:8090/TSdb-dump");
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        TSdbDumpEl.textContent =
+          "Error " + res.status + ":\n\n" + errBody;
+        return;
+      }
+
+      const TSdumpText = await res.text();
+      TSdbDumpEl.textContent = TSdumpText;
+    } catch (err) {
+      TSdbDumpEl.textContent = "Request error: " + err;
+    }
+  });
+</script>
   </script>
 </body>
 </html>

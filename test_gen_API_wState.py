@@ -130,7 +130,7 @@ SESSION = "default"  # Session
 runner = None
 
 # SQLite database will be created automatically
-db_url = "sqlite+aiosqlite:///Test_Generator_State.db"  # Local SQLite file
+db_url = "sqlite:///Test_Generator_State.db"  # Local SQLite file
 session_service = DatabaseSessionService(db_url=db_url)
 
 def get_runner():
@@ -245,9 +245,40 @@ async def gen_test(
                 agent_generated_test_data = full_agent_response.strip()
 
             log.info(f"Final Extracted Contact Record: {agent_generated_test_data}")
+        
         else:
-            log.info(f"No prompt provided by frontend.")  
+            log.info(f"No prompt provided by frontend.") 
 
+        # Get API URL from environment variables
+        api_under_test_url = os.getenv("API_UNDER_TEST_URL")
+        if not api_under_test_url:
+            raise ValueError("API_UNDER_TEST_URL environment variable is not set")
+            
+       # Call the API under test with generated test data
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            try:
+                log.info("Calling API under test: %s", api_under_test_url)
+                log.info("Payload: %r", {"record": agent_generated_test_data})
+
+                resp = await client.post(
+                    api_under_test_url,
+                    json={"record": agent_generated_test_data},
+                )
+
+                log.info("Upstream status: %s", resp.status_code)
+                log.info("Upstream raw body: %s", resp.text)
+
+                resp.raise_for_status()
+                data_from_API_under_test = resp.json()
+                log.info("Upstream JSON parsed: %s", data_from_API_under_test)
+
+            except httpx.ReadTimeout as e:
+                log.error("Timeout calling API under test: %r", e)
+                data_from_API_under_test = {"result": "Timeout calling API under test."}
+
+            except httpx.RequestError as e:
+                log.error("Network error calling API under test: %r", e)
+                data_from_API_under_test = {"result": f"Network error calling API under test: {e}"}
 
     except Exception as e:
         log.error("ADK processing error: %s", str(e))
@@ -260,6 +291,94 @@ async def gen_test(
     return FrontendResponse(
         agent_generated_test_data=agent_generated_test_data,
         test_results_from_API=data_from_API_under_test["result"],
+    )
+import sqlite3
+
+from fastapi import HTTPException
+from fastapi.responses import PlainTextResponse
+
+TGDB_PATH = os.getenv("GENERATED_TESTS_DB_PATH", "GeneratedTests.db")
+
+@app.get("/TGdb-dump", response_class=PlainTextResponse)
+async def get_TGdb_dump() -> PlainTextResponse:
+    """
+    Return a SQLite dump (SQL statements) of the database as plain text.
+    """
+    if not os.path.exists(TGDB_PATH):
+        raise HTTPException(status_code=404, detail=f"Database file not found: {TGDB_PATH}")
+
+    # Build the SQL dump in memory
+    conn = sqlite3.connect(TGDB_PATH)
+    try:
+        buf = io.StringIO()
+        for line in conn.iterdump():
+            buf.write(f"{line}\n")
+        dump_text = buf.getvalue()
+    finally:
+        conn.close()
+
+    # Return as text, with a suggested download filename
+    return PlainTextResponse(
+        content=dump_text,
+        headers={
+            "Content-Disposition": 'attachment; filename="db_dump.sql"'
+        },
+    )
+
+TVDB_PATH = os.getenv("PASSED_TESTS_DB_PATH", "PassedTests.db")
+
+@app.get("/TVdb-dump", response_class=PlainTextResponse)
+async def get_TVdb_dump() -> PlainTextResponse:
+    """
+    Return a SQLite dump (SQL statements) of the database as plain text.
+    """
+    if not os.path.exists(TVDB_PATH):
+        raise HTTPException(status_code=404, detail=f"Database file not found: {TVDB_PATH}")
+
+    # Build the SQL dump in memory
+    conn = sqlite3.connect(TVDB_PATH)
+    try:
+        buf = io.StringIO()
+        for line in conn.iterdump():
+            buf.write(f"{line}\n")
+        dump_text = buf.getvalue()
+    finally:
+        conn.close()
+
+    # Return as text, with a suggested download filename
+    return PlainTextResponse(
+        content=dump_text,
+        headers={
+            "Content-Disposition": 'attachment; filename="db_dump.sql"'
+        },
+    )
+
+TSDB_PATH = os.getenv("TEST_GEN_STATES_DB_PATH", "Test_Generator_State.db")
+
+@app.get("/TSdb-dump", response_class=PlainTextResponse)
+async def get_TVdb_dump() -> PlainTextResponse:
+    """
+    Return a SQLite dump (SQL statements) of the database as plain text.
+    """
+    if not os.path.exists(TSDB_PATH):
+        raise HTTPException(status_code=404, detail=f"Database file not found: {TSDB_PATH}")
+
+    # Build the SQL dump in memory
+    conn = sqlite3.connect(TSDB_PATH)
+    try:
+        buf = io.StringIO()
+        for line in conn.iterdump():
+            buf.write(f"{line}\n")
+        dump_text = buf.getvalue()
+    finally:
+        conn.close()
+
+    # Return as text, with a suggested download filename
+    return PlainTextResponse(
+        content=dump_text,
+        headers={
+            "Content-Disposition": 'attachment; filename="db_dump.sql"'
+        },
     )
 
 if __name__ == "__main__":

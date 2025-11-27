@@ -1,5 +1,6 @@
 
-Prepare a validation_record string for the above contact_record_A, that appears previous to this sentence. 
+If before this sentence there is not a contact_record clearl defined you **MUST** **STOP AND RETURN**!
+Prepare a validation_record string for the above contact_record_A, that appears previous to the previous sentence. 
 I want the breakdown of the logic or steps for this task.
 In plain english explain your answer and give the rationale.
 In the validation_record use a new line after each Rule.

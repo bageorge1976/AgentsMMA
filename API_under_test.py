@@ -121,7 +121,8 @@ def get_validation_narrator_agent():
             description="A dedicated agent for generating verbose, structured narratives based on validation data. This agent's input is the full contact record.",
             instruction="""Your only job is to generate a detailed, verbose, and structured story based on the validation_record field of the input. 
             Do NOT attempt to write a contact record, call other tools, or perform calculations. 
-            Analyze the validation_record (which is a semicolon-separated list of rules) and write a human-readable summary of every rule checked, clearly marking each one as '✅ Passed' or '❌ Failed'. 
+            Analyze the validation_record (which is a semicolon-separated list of rules) and write a human-readable summary of every rule checked. 
+            You **MUST** clearly mark each rule as '✅ Passed' or '❌ Failed'. 
             Always provide a final, prominent summary sentence about the overall record quality.""",
             tools=[], 
         )

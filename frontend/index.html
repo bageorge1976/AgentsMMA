@@ -2,41 +2,375 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Two FastAPI Servers Demo</title>
+  <title>AgentsMMA</title>
+  <!-- Favicon (browser tab icon) -->
+  <link
+    rel="icon"
+    type="image/png"
+    href="TopNotchCanadaLogoSquare150x150.png"
+  />
+  <style>
+           /* Base styles for the entire page */
+        body {
+            background-color: #f3f4f6; /* Equivalent to bg-gray-100 */
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            font-family: sans-serif; /* Equivalent to font-sans */
+        }
+
+        /* Container for the table */
+        .table-container {
+            width: 100%;
+            max-width: 896px; /* Equivalent to max-w-4xl (approx 56rem) */
+            background-color: #ffffff;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Equivalent to shadow-xl */
+            border-radius: 0.75rem; /* Equivalent to rounded-xl */
+            overflow: hidden; /* To contain rounded corners on the table */
+        }
+
+        /* Table title styling */
+        .table-title {
+            font-size: 1.5rem; /* Equivalent to text-2xl */
+            font-weight: 700; /* Equivalent to font-bold */
+            padding: 1.5rem; /* Equivalent to p-6 */
+            border-bottom: 1px solid #e5e7eb; /* Equivalent to border-b */
+            color: #1f2937; /* Equivalent to text-gray-800 */
+        }
+
+        /* Table structure and cell borders */
+        .table-layout {
+            width: 100%;
+            border-collapse: collapse; /* Ensure single borders */
+        }
+
+        .table-layout th, .table-layout td {
+            /* Darker border color (#9ca3af is gray-400) for better visibility of outer borders */
+            border: 1px solid #9ca3af; 
+            padding: 1rem;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        /* Header row styling */
+        .table-layout thead th {
+            background-color: #3b82f6; /* Equivalent to bg-blue-500 */
+            color: #ffffff;
+        }
+
+        /* Column width control (50/50 split) */
+        .col-1-header {
+            width: 50%;
+            border-top-left-radius: 0.75rem; /* rounded-tl-xl */
+        }
+        .col-2-header {
+            width: 50%;
+            border-top-right-radius: 0.75rem; /* rounded-tr-xl */
+        }
+
+        /* Row-spanned cell styling (Main Section Title) */
+        .rowspan-cell {
+            background-color: #eff6ff; /* Equivalent to bg-blue-50 */
+            color: #1e40af; /* Equivalent to text-blue-800 */
+            font-weight: 600; /* Equivalent to font-semibold */
+            font-size: 1.125rem; /* Equivalent to text-lg */
+            border-right: 2px solid #bfdbfe; /* Equivalent to border-r-2 border-blue-200 */
+        }
+        
+        /* Ensure content in the rowspan cell is top-aligned */
+        .rowspan-cell-content {
+            height: 100%; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: flex-start; 
+            padding: 1rem; 
+        }
+        .rowspan-cell-content p {
+            font-size: 0.875rem; /* Equivalent to text-sm */
+            font-weight: 400; /* Equivalent to font-normal */
+            margin-top: 0.5rem; /* Equivalent to mt-2 */
+            color: #2563eb; /* Equivalent to text-blue-600 */
+        }
+
+        /* Unified Item 1 and 2 styling (border removal) */
+        .item-1-unify {
+            border-bottom: none; /* Equivalent to border-b-0 */
+        }
+        .item-2-unify {
+            border-top: none; /* Equivalent to border-t-0 */
+        }
+
+        /* Full-width unified row styling */
+        .full-width-row {
+            background-color: #d1fae5; /* Equivalent to bg-green-100 */
+            text-align: center;
+            font-weight: 700; /* Equivalent to font-bold */
+            color: #065f46; /* Equivalent to text-green-800 */
+            border-bottom: 2px solid #a7f3d0; /* Equivalent to border-b-2 border-green-300 */
+        }
+
+        /* Final normal row styling */
+        .normal-row {
+            background-color: #e5e7eb; /* Equivalent to bg-gray-200 */
+        }
+
+        /* Last item border radius */
+        .item-10-last {
+            border-bottom-right-radius: 0.75rem; /* rounded-br-xl */
+        }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+    }
+
+    .topbar img {
+      height: 40px;
+      width: 40px;
+      object-fit: contain;
+    }
+
+    .content {
+      padding: 0 12px 24px;
+    }
+
+    /* THE FINAL FIX: Aggressively ensures the <pre> tag scrolls horizontally */
+    /* FINAL WRAPPING AND SCROLLING FIX: Ensures ALL relevant <pre> content wraps and scrolls if needed */
+    #resultTestGeneration, 
+    #resultTestValidation, 
+    .result-block pre {
+        white-space: pre-wrap; /* Allows wrapping at container edge */
+        overflow-x: auto; /* Ensures horizontal scrollbar on the box for long, unbroken strings */
+        word-break: break-all; /* Forces break for long unbroken strings (e.g., long JSON keys) */
+    }
+
+        /* Styling for the large red button (size reduced by ~33%) */
+        .red-button {
+            /* Reduced size by ~33% (was 1.5rem 3rem, now 1rem 2rem) */
+            padding: 1rem 2rem;
+            font-size: 1.65rem; /* Reduced font size for the "Send" text (was 2.5rem) */
+            font-weight: bold;
+            
+            /* Red color scheme */
+            background-color: #e53e3e; /* Bright Red */
+            color: white;
+            border: 4px solid #c53030; /* Darker border */
+            border-radius: 1rem; /* Rounded corners */
+            cursor: pointer;
+            
+            /* Visual effects */
+            box-shadow: 0 7px 14px rgba(229, 62, 62, 0.4), 0 3px 3px rgba(0, 0, 0, 0.1); /* Reduced shadow depth */
+            transition: all 0.2s ease;
+            
+            /* Flexbox to align icon and text */
+            display: flex;
+            align-items: center; /* Vertically center icon and text */
+            gap: 0.5rem; /* Reduced spacing */
+        }
+
+        /* Hover and active states for interaction (adjusted values) */
+        .red-button:hover {
+            background-color: #c53030; /* Darker red on hover */
+            box-shadow: 0 9px 18px rgba(197, 48, 48, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .red-button:active {
+            background-color: #9b2c2c; /* Even darker red on press */
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+            transform: translateY(1px);
+        }
+
+        /* Styling for the Santa icon (emoji) (size reduced by ~33%) */
+        .santa-icon {
+            font-size: 2rem; /* Reduced size (was 1.5rem) */
+            line-height: 1; /* Ensures proper vertical alignment */
+        }
+
+        /* Hide the text color for the emoji as it is handled by the emoji itself */
+        .button-text {
+            color: white;
+        }
+
+        /* *** NEW STYLES ADDED HERE FOR BORDER REMOVAL *** */
+        .table-layout .item-1-unify {
+            /* Removes the bottom border of Item 1's cell */
+            border-bottom-width: 0; 
+        }
+        .table-layout .item-2-unify {
+            /* Removes the top border of Item 2's cell */
+            border-top-width:0; 
+        }
+        /* *** END NEW STYLES *** */
+
+                /* *** NEW STYLES ADDED HERE FOR BORDER REMOVAL *** */
+        .table-layout .item-3-unify {
+            /* Removes the bottom border of Item 1's cell */
+            border-bottom-width: 0; 
+        }
+        .table-layout .item-4-unify {
+            /* Removes the top border of Item 2's cell */
+            border-top-width:0; 
+        }
+        /* *** END NEW STYLES *** */
+
+        /* *** NEW STYLES ADDED HERE FOR BORDER REMOVAL *** */
+        .table-layout .item-5-unify {
+            /* Removes the bottom border of Item 1's cell */
+            border-bottom-width: 0; 
+        }
+        .table-layout .item-6-unify {
+            /* Removes the top border of Item 2's cell */
+            border-top-width:0; 
+        }
+        /* *** END NEW STYLES *** */
+
+                /* *** NEW STYLES ADDED HERE FOR BORDER REMOVAL *** */
+        .table-layout .item-7-unify {
+            /* Removes the bottom border of Item 1's cell */
+            border-bottom-width: 0; 
+        }
+        .table-layout .item-8-unify {
+            /* Removes the top border of Item 2's cell */
+            border-top-width:0; 
+        }
+        /* *** END NEW STYLES *** */
+
+                /* *** NEW STYLES ADDED HERE FOR BORDER REMOVAL *** */
+        .table-layout .item-9-unify {
+            /* Removes the bottom border of Item 1's cell */
+            border-bottom-width: 0; 
+        }
+        .table-layout .item-10-unify {
+            /* Removes the top border of Item 2's cell */
+            border-top-width:0; 
+        }
+        /* *** END NEW STYLES *** */
+  </style>
 </head>
 <body>
-  <h2>Membership Monitoring Application: Test Generation and Test Validation</h2>  
-  <h3>This Frontend (8002) →  Test Generation API (8090) → Test Validation API (8080) → Test Generation API (8090) → This Frontend (8002)</h3>
+    <!-- Top-left logo -->
+  <div class="topbar">
+    <img src="TopNotchCanadaLogoSquare150x150.png" alt="Top Notch Canada logo" />
+  </div>
 
-  <form id="textForm">
-    <label for="text">Enter some text:</label><br />
-    <textarea id="text" rows="4" cols="60">hello from frontend</textarea><br /><br />
-    <button type="submit">Send</button>
-  </form>
+  <div class="content">
+  <h1>Agents Membership Monitoring Application (AgentsMMA): Test Generation and Test Validation</h1>  
+  <h2>This Frontend (8002) →  Test Generation API (8090) → Test Validation API (8080) → Test Generation API (8090) → This Frontend (8002)</h2>
 
+  <hr size="7" color="blue">
+
+      <div class="w-full max-w-4xl bg-white shadow-xl rounded-xl">
+        <h3 class="text-2xl font-bold p-6 border-b text-gray-800">Control Prompt Panel:</h1>
+
+        <!-- The Table Structure -->
+        <table class="table-layout w-full border-collapse">
+            <thead>
+                <tr class="bg-blue-500 text-white">
+                    <!-- Column 1 Header: Set to w-1/2 (50%) -->
+                    <th class="w-1/2 rounded-tl-xl">Prompt Content (to be sent)</th>
+                    <!-- Column 2 Header: Set to w-1/2 (50%) -->
+                    <th class="w-1/2 rounded-tr-xl">Prompt Templates</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- ROW 1 (The complex row - Main Section Title cell spans 10 rows) -->
+                <tr>
+                    <!-- Cell in Column 1: This cell will span 10 rows on the right -->
+                    <td rowspan="10" class="bg-blue-50 text-blue-800 font-semibold text-lg border-r-2 border-blue-200">
+                        <div class="rowspan-cell-content p-4">
+                          <form id="textForm">
+                            <label for="text">The text below will be sent to the Test Generator:</label><br />
+                            <textarea id="text" rows="30" cols="80">hello from frontend</textarea><br /><br />
+                                <button class="red-button">
+                                    <span class="santa-icon" aria-hidden="true">🎅</span>
+                                    <span class="button-text">Send</span>
+                                </button>
+                          </form>
+                        </div>
+                    </td>
+
+                    <!-- Cell in Column 2, Row 1 -->
+                    <td class="item-1-unify"><button id="prompt1">What is my name?</button></td>
+                </tr>
+                
+                <!-- ROWS 2 through 10 (10 items in the second column) -->
+                <tr><td class="item-2-unify">This is a preliminary session state test.</td></tr>
+                <tr><td class="item-3-unify"><button id="prompt2">What was the previous prompt?</button></td></td></tr>
+                <tr><td class="item-4-unify">This is a useful feature that needs to be tested.</td></tr>
+                <tr><td class="item-5-unify"><button id="prompt3">Generate a test that fails rule 1.</button></td></tr>
+                <tr><td class="item-6-unify">Generate a first name that is malformed.</td></tr>
+                <tr><td class="item-7-unify"><button id="prompt4">Generate a test that fails rule 3.</button></td></tr>
+                <tr><td class="item-8-unify">Generate an incorrect hebrew name and evaluate it.</td></tr>
+                <tr><td class="item-9-unify"><button id="prompt5">Generate a test that fails rule 8.</button></td></tr>
+                <tr><td class="item-10-unify rounded-br-xl">Generate a record with the hebrew birth date missing that is to be filled through conversion of the Gregorian date.</td></tr>
+                
+                <!-- NEW FULL-WIDTH ROW ADDED HERE 
+                <tr class="bg-green-100">
+                    <td colspan="2" class="text-center font-bold text-green-800 border-b-2 border-green-300">
+                        *** New Unified Row Added Here (Spanning Columns 1 & 2) ***
+                    </td>
+                </tr>
+                
+                
+                <tr class="bg-gray-200">
+                    <td>Another Category Group</td>
+                    <td>Normal Single Item</td>
+                </tr>
+                -->
+
+            </tbody>
+        </table>
+    </div>
+
+
+
+
+  <hr size="7" color="blue">
   <h2>Response from the APIs:</h2>
   <h3>Response from Test Generation API:</h3>
   <pre id="resultTestGeneration"></pre>
+
+  <hr>
+
   <h3>Response from Test Validation API:</h3>
   <pre id="resultTestValidation"></pre>
 
     <!-- NEW: DB dump section -->
+  <hr size="7" color="blue">
+    <h2>Databases Content:</h2>
+
   <div class="result-block">
-    <div class="result-title">Test Generation Database dump</div>
-    <button id="TGloadDumpBtn">Load Test Generation DB dump</button>
+    <h3>Test Generation Database Content</h3>
+    <button id="TGloadDumpBtn">Load Test Generation DB Content</button>
     <pre id="TGdbDump">(not loaded yet)</pre>
   </div>
 
+  <hr>
   <div class="result-block">
-    <div class="result-title">Test Validation Database dump</div>
-    <button id="TVloadDumpBtn">Load Test Validation DB dump</button>
+    <h3>Test Validation Database Content</h3>
+    <button id="TVloadDumpBtn">Load Test Validation DB Content</button>
     <pre id="TVdbDump">(not loaded yet)</pre>
   </div>
 
+  <hr>
     <div class="result-block">
-    <div class="result-title">States Database dump</div>
-    <button id="TSloadDumpBtn">Load States DB dump</button>
+    <h3>States DB Content</h3>
+    <button id="TSloadDumpBtn">Load States DB Content</button>
     <pre id="TSdbDump">(not loaded yet)</pre>
+  </div>
+  
+  <hr size="7" color="blue">
   </div>
 
   <script>
@@ -146,6 +480,53 @@
       TSdbDumpEl.textContent = "Request error: " + err;
     }
   });
+
+  // 👇 NEW LOGIC: Fetch content from local files when buttons are clicked
+    const textArea = document.getElementById('text');
+    const loadPrompt1Btn = document.getElementById('prompt1');
+    const loadPrompt2Btn = document.getElementById('prompt2');
+    const loadPrompt3Btn = document.getElementById('prompt3');
+    const loadPrompt4Btn = document.getElementById('prompt4');
+    const loadPrompt5Btn = document.getElementById('prompt5');
+    
+
+    // Generic function to fetch and load a file
+    async function loadPromptFile(filePath) {
+        try {
+            const response = await fetch(filePath);
+            if (!response.ok) {
+                // If the file is not found (404) or another error occurs, throw an error
+                throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
+            }
+            const fileContent = await response.text();
+            textArea.value = fileContent;
+        } catch (error) {
+            console.error('Error loading prompt file:', error);
+            textArea.value = `*** ERROR LOADING FILE: ${filePath} ***\nPlease ensure this file exists in the same directory as index.html and your local server is running.\nDetails: ${error.message}`;
+        }
+    }
+
+    // Event listeners for the new buttons
+    loadPrompt1Btn.addEventListener('click', () => {
+        loadPromptFile('prompt1.txt');
+    });
+
+    loadPrompt2Btn.addEventListener('click', () => {
+        loadPromptFile('prompt2.txt');
+    });
+
+    loadPrompt3Btn.addEventListener('click', () => {
+        loadPromptFile('prompt3.txt');
+    });
+
+    loadPrompt4Btn.addEventListener('click', () => {
+        loadPromptFile('prompt4.txt');
+    });
+
+    loadPrompt5Btn.addEventListener('click', () => {
+        loadPromptFile('prompt5.txt');
+    });
+    // 👆 END NEW LOGIC
 </script>
   </script>
 </body>

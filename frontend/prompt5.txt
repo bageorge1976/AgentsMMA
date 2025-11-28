@@ -1,0 +1,131 @@
+Example:
+Contact(first_name="Bogdan",
+        last_name="Georgescu",
+        hebrew_name= "דניאל בן אברהם",
+        birth_date=datetime(1976,1,16),
+        birth_date_day_h=14,
+        birth_date_month_h=2, 
+        birth_date_year_h=5776, 
+        phone_primary="14032829220",    
+        phone_secondary="15879669220",  
+        email="bageorge1976@gmail.com",
+        address="805 80 Point McKay CR NW",
+        city="Calgary",
+        province="Alberta",
+        country="Canada",
+        postal_code="T3B4W4",
+        notes="A sample contact")
+
+Set the validation_record to "".
+Create a contact record as in example above so that its validation_record will contain the string without quotes:
+Rule 8: Failed; Conversion needed from Gregorian to Hebrew.
+
+Do not change the fields of the contact record. You can only change their content. 
+The validation_record of the contact record you create which is separated from the other fields should be generated using the following rules which you should verify step by step and be prepared to give the rationale:
+
+
+Rule 1: Contact field first_name is at least 2 chars long and starts with a capital letter (Example: 'Bogdan').
+If Rule 1 is true add "Rule 1: Passed; first_name valid." to the validation_record
+else add "Rule 1: Failed; first_name invalid." to the validation_record.
+
+
+Rule 2: Contact field last_name is at least 2 chars long and start with a capital letter (Example: 'Georgescu').
+If Rule 2 is true add "Rule 2: Passed; last_name valid." to the validation_record.
+else add "Rule 2: Failed; first_name invalid." to the validation_record.
+
+
+Rule 3: Contact field hebrew_name is in the format of a traditional Hebrew name and it is written with 
+English alfabet or Hebrew alefbet
+(
+Examples: 'Daniel ben Avraham', 'Sarah bat Daniel', 
+'דניאל בן אברהם',
+'שרה בת דניאל'
+).
+If Rule 3 is true add "Rule 3: Passed; hebrew_name valid." to the validation_record
+else add "Rule 3: Failed; hebrew_name invalid." to the validation_record.
+
+
+Rule 4: Contact field birth_date corresponds to a valid Gregorian calendar, adult, older than 18 old years birth date
+(Example: 1976-1-16)
+or
+Contact field birth_date is empty.
+(Example null, '').
+If Rule 4 is true add "Rule 4: Passed; birth_date valid or empty." to the validation_record
+else add "Rule 4: Failed; birth_date invalid." to the validation_record.
+
+
+Rule 5: The Hebrew date extracted from contact fields 
+birth_date_day_h corresponding to the Hebrew day, 
+birth_date_month_h corresponding to the Hebrew month,
+birth_date_year_h corresponding to the Hebrew year,
+is a valid Hebrew birth day of a person older than 18 years old 
+(Example: birth_date_day_h=14, birth_date_month_h=2, birth_date_year_h=5776)
+or 
+some of the contact fields birth_date_day_h, birth_date_month_h, birth_date_year_h are empty
+(Example: one or more fields (birth_date_day_h, birth_date_month_h, birth_date_year_h) is equal to 0). 
+If Rule 5 is true add "Rule 5: Passed; Hebrew birth date valid or empty." to the validation_record
+else add "Rule 5: Failed; Hebrew birth date invalid." to the validation_record.
+
+
+Rule 6: The Hebrew birth date passed, made true, Rule 5 and it is empty
+and
+the Gregorian birth date passed, made true, Rule 4, and it is empty.
+If Rule 6 is true add "Rule 6: Failed; Both Hebrew date and Gregorian date are empty." to the validation_record
+else add "Rule 6: Passed; Either the Hebrew birth date or the Gregorian birth date contains valid non-empty data." to the validation_record.  
+
+
+Rule 7. If the 
+contact field birth_date is valid and it is not empty as in Rule 4 
+and 
+the Hebrew date is valid and is not empty as in Rule 5, 
+the Hebrew date in Rule 5 can be obtained through a process of conversion 
+of (or it is equal to) the Gregorian birth_date in Rule 4.
+If Rule 7 is true add "Rule 7: Passed; The Hebrew and Gregorian birth dates are the same. No Need to perform conversion." to the validation_record
+else add "Rule 7: Failed; The Hebrew and Gregorian dates do not correspond." to the validation_record.
+
+
+Rule 8. The contact field birth_date is valid and it is not empty and 
+the Hebrew birth date is empty (Example: one or more fields (birth_date_day_h, birth_date_month_h, birth_date_year_h) is equal to 0).
+If Rule 8 is not true add: "Rule 8: Passed; No conversion needed from Gregorian to Hebrew." to validation_record
+else add "Rule 8: Failed; Conversion needed from Gregorian to Hebrew." to validation_record.
+
+
+Rule 9. The Hebrew date is valid and it is not empty (Example: none of the fields (birth_date_day_h, birth_date_month_h, birth_date_year_h) is equal to 0) 
+and contact field birth_date is empty.
+If Rule 9 is not true add: "Rule 9: Passed; No conversion needed from Hebrew to Gregorian." to validation_record
+else add "Rule 9: Failed; Conversion needed from Hebrew to Gregorian." to validation_record. 
+
+
+Rule 10. Contact field phone_primary is a valid Canada phone number.
+If Rule 10 is true add: "Rule 10: Passed; Primary phone number is valid" to the validation_record
+else add "Rule 10: Failed; Primary phone number is not valid" to the validation_record.
+
+
+Rule 11. Contact field phone_secondary is a valid Canada phone number.
+If Rule 11 is true add: "Rule 11: Passed; Secondary phone number is valid" to the validation_record
+else add "Rule 11: Failed; Secondary phone number is not valid" to the validation_record.
+
+
+Rule 12. Contact field email is an email address with a valid email address format.
+If Rule 12 is true add: "Rule 12: Passed; email address is valid" to the validation_record
+else add "Rule 12: Failed; email address is not valid" to the validation_record.
+
+
+Rule 13. Contact fields address, city, province, country, postal_code form a valid Canadian address.
+If Rule 13 is true add: "Rule 13: Passed; address, city, province, country, postal_code combination is valid" to the validation_record
+else add "Rule 13: Failed; address, city, province, country, postal_code combination is not valid" to the validation_record.
+
+
+Rule 14. Contact field notes contains Standard English.
+If Rule 14 is true add: "Rule 14: Passed; notes field is valid" to the validation_record
+else add "Rule 14: Failed; notes field is not valid" to the validation_record.
+
+
+The final output MUST be the single, raw string of the Contact(...) object, without surrounding quotes, python imports, 
+class definitions, comments, or any other explanatory code. 
+Use the format: Contact(field1=value1, ...) with a newline after each comma.
+Remove the newline in the validation_record.
+Before each occurrence of the word Rule in the validation_record start a new line.
+
+You ***must**:
+Write the contact record you generated to the database using the tool write_contact_to_database and Output the response.

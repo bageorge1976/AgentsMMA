@@ -1,6 +1,8 @@
 # frontend_server.py
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 
+# Configuration
+# Do not change the PORT setting without changing the backend API CORS settings
 PORT = 8002
 DIRECTORY = "."  # folder where index.html lives
 

@@ -1,3 +1,32 @@
+"""
+API_under_test.py
+
+FastAPI service that acts as the **API under test** in the Membership Monitoring
+Application demo. This API:
+
+- Exposes a POST /to_be_tested endpoint that receives a JSON payload
+  of the form: {"record": "<agent_generated_contact_or_text>"}.
+- Uses a Google ADK / Gemini-based "validator" agent to:
+    * interpret the incoming record (usually a contact record)
+    * run a series of validation rules (under_test_cmd.txt)
+    * generate a detailed natural-language validation report
+- Returns the validation narrative as JSON to the caller, typically the
+  Test Generator API (on port 8090), which then forwards the result to
+  the browser frontend (port 8002).
+
+Typical usage:
+
+    python API_under_test.py
+
+This file is intentionally simple and focused on validating a single
+`record` field, so it can be exercised by the test generator agent
+as a black-box API.
+"""
+
+# Author: Bogdan Alexandru Georgescu
+# Project: Membership Monitoring Application (MMA) – API Under Test
+# Python: 3.11
+
 import io
 import contextlib
 import os
@@ -25,10 +54,10 @@ except ImportError as e:
     print(f"❌ ADK Import Error: {e}")
     raise
 
-# --- NEW IMPORTS for Database Tool ---
+# imports for Database Tool ---
 from database_remote import save_contact_to_db, create_all_tables # Import db functions
 
-# --- NEW Pydantic Model for Tool Input (based on schemas.py/ContactBase) ---
+# Pydantic Model for Tool Input (based on schemas.py/ContactBase) ---
 class ContactRecordInput(BaseModel):
     """Schema for a full contact record passed to the database tool."""
     first_name: str
@@ -49,7 +78,7 @@ class ContactRecordInput(BaseModel):
     province: str    
     notes: str
 
-# --- NEW ADK Tool Function ---
+# ADK Tool Function
 async def write_contact_to_database(
     first_name: str,
     last_name: str,
@@ -100,14 +129,14 @@ async def write_contact_to_database(
             # created_at / updated_at are filled by SQLAlchemy defaults
         }
 
-        msg, new_id = await save_contact_to_db(contact_data)  # returns (msg, id) :contentReference[oaicite:1]{index=1}
+        msg, new_id = await save_contact_to_db(contact_data)  
         return f"{msg} New contact id={new_id}."
 
     except Exception as e:
         return f"Failed to save contact record to database: {e}"
-# --- END NEW ADK Tool Function ---
+    
 
-# --- Child Agent Definition ---
+# Child/Sub-Agent Definition
 validation_narrator_agent = None
 
 def get_validation_narrator_agent():
@@ -115,8 +144,10 @@ def get_validation_narrator_agent():
     global validation_narrator_agent
     if validation_narrator_agent is None:
         validation_narrator_agent = Agent(
+
             # THIS NAME IS USED BY THE ROOT AGENT TO CALL THE TOOL
             name="ValidationNarratorAgent", 
+            
             model="gemini-2.5-flash",
             description="A dedicated agent for generating verbose, structured narratives based on validation data. This agent's input is the full contact record.",
             instruction="""Your only job is to generate a detailed, verbose, and structured story based on the validation_record field of the input. 
@@ -131,7 +162,7 @@ def get_validation_narrator_agent():
 # Initialize runner only once
 runner = None
 
-
+# Thanks to the course authors for this pattern!
 def get_runner():
     global runner
     if runner is None:
@@ -153,14 +184,8 @@ def get_runner():
                 "2. Next, you MUST call the 'ValidationNarratorAgent' tool, passing the contact record, the validation_record and the rules to retrieve the detailed, verbose validation narrative from the sub-agent."
                 "3. Then, you MUST call the 'write_contact_to_database' tool to persist the record."
                 "4. Your final, complete response MUST be a combination of the verbose validation story (Step 2 result) and the database success message (Step 3 result). Be clear and verbose in your final summary."
-                # "First validate the contact record according to the rules provided step by step and providing the rationale. "
-                #"When you have a complete contact record (with names, dates, phones, address, etc.), "
-                #"call the `write_contact_to_database` tool with all the appropriate fields. "
-                #"After successfully calling the 'write_contact_to_database' tool, your final answer MUST explicitly begin with the exact, full success message returned by the tool. Do not shorten, summarize, or modify the tool's output message. Your response must be clear and verbose."
-                #"Use ISO format for birth_date (YYYY-MM-DD). "
-                #"Use Google Search for current info or if unsure."
             ),
-            tools=[write_contact_to_database,AgentTool(agent=child)], #removed google_search
+            tools=[write_contact_to_database,AgentTool(agent=child)], 
         )
         print("✅ Root Agent defined.")
         
@@ -179,7 +204,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="API Under Test", lifespan=lifespan)
 
-# Allow your HTML server on 8001 to call this API
+# CORS settings
+# This is only needed if you want to call this API from a front-end running on a different origin.
+# Allow your HTML server on 8002 to call this API just in case.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8002"],  # front-end origin
@@ -197,15 +224,14 @@ class ResponseToTestGeneratorAPI(BaseModel):
 @app.post("/to_be_tested", response_model=ResponseToTestGeneratorAPI)
 async def test_data(
     payload: RequestFromTestGeneratorAPI,
-    #x_mailhook_token: Union[str, None] = Header(default=None)  # optional: read shared secret header
 ) -> Response:
-    # Read raw body bytes
     
-
+    # This config type file contains the prompt instructions for the agent
+    # Read raw body bytes
     with open("under_test_cmd.txt", "r", encoding="utf-8") as f:
         cmd_prompt = f.read()
 
-    agent_text = ""  # ✅ initialize so it's always defined
+    agent_text = ""  # initialize so it's always defined
 
     # Process the text with Google ADK agent
     try:
@@ -232,7 +258,8 @@ async def test_data(
 
     return ResponseToTestGeneratorAPI(result=agent_text)
 
+# Run the FastAPI app with Uvicorn. You can set PORTB in .env or environment.
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8080"))
+    port = int(os.getenv("PORTB", "8080"))
     print(f"API under test on :{port}")
     uvicorn.run("API_under_test:app", host="0.0.0.0", port=port, reload=False)

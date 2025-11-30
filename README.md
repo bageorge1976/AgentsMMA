@@ -5,8 +5,16 @@ A frontend making user requests to a test generation API which sends test record
 
 ## Quickstart
 
+**Make sure you have GOOGLE_API_KEY set**
+
 **Make sure you have ports 8002, 8090, 8080 free.**
-**Tested with Python 3.11.7.**
+
+However:
+1. To change 8090 set env variable PORTA.
+2. To change 8080 set env variable PORTB.
+3. To change 8002 modify ./frontend/frontend_server.py PORT variable **and the CORS settings in the FastAPI files**.
+
+**Tested with Python 3.11.7:**
 
 
 ```bash

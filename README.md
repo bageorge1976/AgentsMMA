@@ -1,47 +1,25 @@
+# Agents Membership Monitoring Application (AgentsMMA)
+# Frontend (8002) →  Test Generation API (8090) → Test Validation API (8080) → Test Generation API (8090) → Frontend (8002)
 
-# Mailhook SMTP → Webhook
-
-A tiny SMTP server (Python) that posts every received email to an HTTP webhook.
+A frontend making user requests to a test generation API which sends test records to a validation API.
 
 ## Quickstart
+
+**Make sure you have ports 8002, 8090, 8080 free.**
+**Tested with Python 3.11.7.**
+
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-python mailhook_server.py \
-  --webhook-url "http://localhost:8080/email-webhook" \
-  --token "supersecret" \
-  --port 2525 \
-  --log-level DEBUG
+python API_under_test
+
+python test_gen_API_wState.py
+
+cd frontend
+python frontend_server.py
 ```
 
-Test with `swaks`:
-```bash
-swaks --to you@example.com \
-      --from test@sender.net \
-      --server 127.0.0.1:2525 \
-      --data "Subject: Hello\n\nThis is a test."
-```
+## Point your browser to 8002. Enjoy!
 
-Run a simple webhook receiver (for testing):
-```bash
-python webhook_receiver.py 8080
-```
-
-## Docker
-
-```bash
-docker build -t mailhook .
-docker run --rm -p 2525:2525 mailhook
-```
-
-## TLS (STARTTLS)
-
-Provide both `--tls-cert` and `--tls-key` to enable STARTTLS. You can also terminate TLS upstream.
-
-## Security
-
-- Protect your webhook with `--token` (sent as `X-Mailhook-Token`).
-- Restrict recipients with `--allowed-rcpt-domain example.com` (repeatable).
-- Prefer HTTPS webhooks; avoid `--no-verify-tls` in production.

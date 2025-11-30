@@ -209,7 +209,7 @@ app = FastAPI(title="API Under Test", lifespan=lifespan)
 # Allow your HTML server on 8002 to call this API just in case.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8002"],  # front-end origin
+    allow_origins=["http://localhost:8090"],  # front-end origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

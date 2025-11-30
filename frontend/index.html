@@ -381,6 +381,9 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
+      resultTG.textContent = "Loading...";
+      resultTV.textContent = "Loading...";
+
       const prompt = document.getElementById("text").value;
 
       try {

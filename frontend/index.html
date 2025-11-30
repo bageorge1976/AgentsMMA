@@ -481,17 +481,9 @@
     }
   });
 
-  // 👇 NEW LOGIC: Fetch content from local files when buttons are clicked
-    const textArea = document.getElementById('text');
-    const loadPrompt1Btn = document.getElementById('prompt1');
-    const loadPrompt2Btn = document.getElementById('prompt2');
-    const loadPrompt3Btn = document.getElementById('prompt3');
-    const loadPrompt4Btn = document.getElementById('prompt4');
-    const loadPrompt5Btn = document.getElementById('prompt5');
-    
-
-    // Generic function to fetch and load a file
+  // Generic function to fetch and load a file
     async function loadPromptFile(filePath) {
+        const textArea = document.getElementById('text');
         try {
             const response = await fetch(filePath);
             if (!response.ok) {
@@ -505,27 +497,22 @@
             textArea.value = `*** ERROR LOADING FILE: ${filePath} ***\nPlease ensure this file exists in the same directory as index.html and your local server is running.\nDetails: ${error.message}`;
         }
     }
+    
+    // 👇 NEW LOGIC USING A LOOP AND CONSTANT
+    const textArea = document.getElementById('text');
+    const NUM_PROMPTS = 5; // Defined constant for the number of prompts
 
-    // Event listeners for the new buttons
-    loadPrompt1Btn.addEventListener('click', () => {
-        loadPromptFile('prompt1.txt');
-    });
+    // Loop to attach listeners to prompt buttons 1 through 5
+    for (let i = 1; i <= NUM_PROMPTS; i++) {
+        const buttonId = `prompt${i}`;
+        const button = document.getElementById(buttonId);
 
-    loadPrompt2Btn.addEventListener('click', () => {
-        loadPromptFile('prompt2.txt');
-    });
-
-    loadPrompt3Btn.addEventListener('click', () => {
-        loadPromptFile('prompt3.txt');
-    });
-
-    loadPrompt4Btn.addEventListener('click', () => {
-        loadPromptFile('prompt4.txt');
-    });
-
-    loadPrompt5Btn.addEventListener('click', () => {
-        loadPromptFile('prompt5.txt');
-    });
+        if (button) {
+            button.addEventListener('click', () => {
+                loadPromptFile(`prompt${i}.txt`);
+            });
+        }
+    }
     // 👆 END NEW LOGIC
 </script>
   </script>

@@ -250,7 +250,7 @@ async def gen_test(
             log.info(f"No prompt provided by frontend.") 
 
         # Get API URL from environment variables
-        api_under_test_url = os.getenv("API_UNDER_TEST_URL")
+        api_under_test_url = os.getenv("API_UNDER_TEST_URL","http://localhost:8080/to_be_tested")
         if not api_under_test_url:
             raise ValueError("API_UNDER_TEST_URL environment variable is not set")
             

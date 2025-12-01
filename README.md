@@ -1,18 +1,13 @@
 # Agents Membership Monitoring Application (AgentsMMA)
-# Frontend (8002) →  Test Generation API (8090) → Test Validation API (8080) → Test Generation API (8090) → Frontend (8002)
+### Frontend (8002) →  Test Generation API (8090) → Test Validation API (8080) → Test Generation API (8090) → Frontend (8002)
 
 A frontend making user requests to a test generation API which sends test records to a validation API.
 
 ## Quickstart
 
-**Make sure you have GOOGLE_API_KEY set**
+**GOOGLE_API_KEY should be set**
 
-**Make sure you have ports 8002, 8090, 8080 free.**
-
-However:
-1. To change 8090 set env variable PORTA.
-2. To change 8080 set env variable PORTB.
-3. To change 8002 modify ./frontend/frontend_server.py PORT variable **and the CORS settings in the FastAPI files**.
+**Ports 8002, 8090, 8080 should be available.**
 
 **Tested with Python 3.11.7:**
 
@@ -20,11 +15,14 @@ However:
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
 python API_under_test
 
+#new terminal
+source .venv/bin/activate
 python test_gen_API_wState.py
 
+#new terminal
+source .venv/bin/activate
 cd frontend
 python frontend_server.py
 ```
